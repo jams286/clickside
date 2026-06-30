@@ -125,6 +125,16 @@ export async function getTask(taskId: string): Promise<Task> {
   return request(`/task/${taskId}?include_subtasks=true`);
 }
 
+export async function searchTaskById(taskId: string): Promise<Task | null> {
+  try {
+    // ClickUp task IDs can be prefixed with # or not - strip leading # if present
+    const cleanId = taskId.replace(/^#/, "").trim();
+    return await request<Task>(`/task/${cleanId}?include_subtasks=true`);
+  } catch {
+    return null;
+  }
+}
+
 export async function updateTaskStatus(
   taskId: string,
   status: string

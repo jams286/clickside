@@ -1,18 +1,29 @@
 import { Task } from "../services/clickup";
 import StatusBadge from "./StatusBadge";
-import { Clock } from "lucide-react";
+import { Clock, Calendar, Flag } from "lucide-react";
 
 interface Props {
   task: Task;
   onDoubleClick: () => void;
 }
 
+const PRIORITY_LABELS: Record<string, string> = {
+  "1": "Urgent",
+  "2": "High",
+  "3": "Normal",
+  "4": "Low",
+};
+
 export default function TaskItem({ task, onDoubleClick }: Props) {
   const dueDate = task.due_date
     ? new Date(parseInt(task.due_date))
     : null;
 
+  const createdDate = new Date(parseInt(task.date_created));
+
   const isOverdue = dueDate && dueDate < new Date() && task.status.type !== "closed";
+
+  const priorityLabel = task.priority ? PRIORITY_LABELS[task.priority.id] || task.priority.priority : null;
 
   return (
     <div
@@ -21,7 +32,7 @@ export default function TaskItem({ task, onDoubleClick }: Props) {
     >
       <div className="flex items-start gap-3">
         {/* Priority indicator */}
-        <div className="mt-1.5 shrink-0">
+        <div className="mt-0.5 shrink-0 self-center">
           <span
             className="block w-2 h-2 rounded-full"
             style={{
@@ -56,6 +67,22 @@ export default function TaskItem({ task, onDoubleClick }: Props) {
 
             <span className="text-[10px] text-text-muted truncate ml-auto">
               {task.list.name}
+            </span>
+          </div>
+
+          {/* Detail row */}
+          <div className="flex items-center gap-3 mt-1.5">
+            <span
+              className="flex items-center gap-1 text-[10px]"
+              style={{ color: task.priority?.color || "#6b7280" }}
+            >
+              <Flag className="w-3 h-3" />
+              {priorityLabel || "No priority"}
+            </span>
+
+            <span className="flex items-center gap-1 text-[10px] text-text-muted">
+              <Calendar className="w-3 h-3" />
+              Created {createdDate.toLocaleDateString(undefined, { month: "short", day: "numeric" })}
             </span>
           </div>
         </div>

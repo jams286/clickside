@@ -41,3 +41,16 @@ export async function setFilters(filters: string[]): Promise<void> {
   await store.set(FILTERS_KEY, filters);
   await store.save();
 }
+
+const SORT_KEY = "task_sort_order";
+
+export async function getSortOrder(): Promise<string> {
+  const store = await getStore();
+  return (await store.get<string>(SORT_KEY)) ?? "updated";
+}
+
+export async function setSortOrder(order: string): Promise<void> {
+  const store = await getStore();
+  await store.set(SORT_KEY, order);
+  await store.save();
+}

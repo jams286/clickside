@@ -26,9 +26,10 @@ export default function MentionInput({ members, onSend, disabled }: Props) {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const filtered = query
-    ? members.filter((m) =>
-        m.username.toLowerCase().includes(query.toLowerCase())
-      )
+    ? members.filter((m) => {
+        const name = m.username || m.email || "";
+        return name.toLowerCase().includes(query.toLowerCase());
+      })
     : members;
 
   const resetDropdown = useCallback(() => {
@@ -42,7 +43,7 @@ export default function MentionInput({ members, onSend, disabled }: Props) {
     (user: ClickUpUser) => {
       const before = value.slice(0, queryStart);
       const after = value.slice(textareaRef.current?.selectionStart ?? value.length);
-      const mentionText = `@${user.username}`;
+      const mentionText = `@${user.username || user.email || "user"}`;
       const newValue = before + mentionText + " " + after;
 
       // Adjust existing mentions that come after insertion point
@@ -188,7 +189,7 @@ export default function MentionInput({ members, onSend, disabled }: Props) {
                   {user.initials}
                 </div>
                 <span className="text-xs text-text truncate">
-                  {user.username}
+                  {user.username || user.email || "Unknown"}
                 </span>
               </button>
             ))}
