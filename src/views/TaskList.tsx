@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getFilteredTasks, searchTaskById, Task, Status } from "../services/clickup";
+import { getFilteredTasks, getSpaces, searchTaskById, Task, Status } from "../services/clickup";
 import { useAuth } from "../context/AuthContext";
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { getFilters, setFilters as saveFilters, getSortOrder, setSortOrder as saveSortOrder } from "../services/store";
@@ -88,6 +88,24 @@ export default function TaskList() {
 
   const teamId = workspaces[0]?.id;
 
+  // Fetch spaces to get space names for display
+  const { data: spacesData } = useQuery({
+    queryKey: ["spaces", teamId],
+    queryFn: () => getSpaces(teamId),
+    enabled: !!teamId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const spaceNames = useMemo(() => {
+    const map: Record<string, string> = {};
+    if (spacesData?.spaces) {
+      for (const s of spacesData.spaces) {
+        map[s.id] = s.name;
+      }
+    }
+    return map;
+  }, [spacesData?.spaces]);
+
   // Always fetch all tasks including closed so we can filter client-side
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["tasks", teamId, user?.id],
@@ -144,7 +162,15 @@ export default function TaskList() {
         sorted.sort((a, b) => a.name.localeCompare(b.name));
         break;
       case "project":
-        sorted.sort((a, b) => a.list.name.localeCompare(b.list.name));
+        sorted.sort((a, b) => {          const sa = spaceNames[a.space.id] || "";
+          const sb = spaceNames[b.space.id] || "";
+          const spaceCmp = sa.localeCompare(sb);
+          if (spaceCmp !== 0) return spaceCmp;          const fa = a.folder.name === "hidden" ? "" : a.folder.name;
+          const fb = b.folder.name === "hidden" ? "" : b.folder.name;
+          const folderCmp = fa.localeCompare(fb);
+          if (folderCmp !== 0) return folderCmp;
+          return a.list.name.localeCompare(b.list.name);
+        });
         break;
       case "updated":
       default:
@@ -221,18 +247,18 @@ export default function TaskList() {
           <div className="flex items-center gap-1">
             <button
               onClick={() => refetch()}
-              className="p-1.5 rounded-md hover:bg-surface-overlay transition-colors"
+              className="p-2.5 rounded-md hover:bg-surface-overlay transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
               title="Refresh"
             >
-              <RefreshCw className={`w-4 h-4 text-text-muted ${isFetching ? "animate-spin" : ""}`} />
+              <RefreshCw className={`w-5 h-5 text-text-muted ${isFetching ? "animate-spin" : ""}`} />
             </button>
             <div className="relative" ref={filterRef}>
               <button
                 onClick={() => setShowFilterMenu(!showFilterMenu)}
-                className={`p-1.5 rounded-md hover:bg-surface-overlay transition-colors ${activeStatuses.size > 0 ? "text-primary" : "text-text-muted"}`}
+                className={`p-2.5 rounded-md hover:bg-surface-overlay transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center ${activeStatuses.size > 0 ? "text-primary" : "text-text-muted"}`}
                 title="Filter by status"
               >
-                <Filter className="w-4 h-4" />
+                <Filter className="w-5 h-5" />
                 {activeStatuses.size > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-primary rounded-full text-[8px] text-white flex items-center justify-center font-bold">
                     {activeStatuses.size}
@@ -283,10 +309,10 @@ export default function TaskList() {
             <div className="relative" ref={sortRef}>
               <button
                 onClick={() => setShowSortMenu(!showSortMenu)}
-                className={`p-1.5 rounded-md hover:bg-surface-overlay transition-colors ${sortOrder !== "updated" ? "text-primary" : "text-text-muted"}`}
+                className={`p-2.5 rounded-md hover:bg-surface-overlay transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center ${sortOrder !== "updated" ? "text-primary" : "text-text-muted"}`}
                 title="Sort tasks"
               >
-                <ArrowUpDown className="w-4 h-4" />
+                <ArrowUpDown className="w-5 h-5" />
               </button>
 
               {showSortMenu && (
@@ -320,28 +346,28 @@ export default function TaskList() {
             </div>
             <button
               onClick={() => { setShowSearch(!showSearch); setTimeout(() => searchInputRef.current?.focus(), 50); }}
-              className={`p-1.5 rounded-md hover:bg-surface-overlay transition-colors ${showSearch ? "text-primary" : "text-text-muted"}`}
+              className={`p-2.5 rounded-md hover:bg-surface-overlay transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center ${showSearch ? "text-primary" : "text-text-muted"}`}
               title="Search by task ID"
             >
-              <Search className="w-4 h-4" />
+              <Search className="w-5 h-5" />
             </button>
             <button
               onClick={toggleMaximize}
-              className="p-1.5 rounded-md hover:bg-surface-overlay transition-colors"
+              className="p-2.5 rounded-md hover:bg-surface-overlay transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
               title={isMaximized ? "Restore" : "Maximize"}
             >
               {isMaximized ? (
-                <Minimize2 className="w-4 h-4 text-text-muted" />
+                <Minimize2 className="w-5 h-5 text-text-muted" />
               ) : (
-                <Maximize2 className="w-4 h-4 text-text-muted" />
+                <Maximize2 className="w-5 h-5 text-text-muted" />
               )}
             </button>
             <button
               onClick={logout}
-              className="p-1.5 rounded-md hover:bg-surface-overlay transition-colors"
+              className="p-2.5 rounded-md hover:bg-surface-overlay transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
               title="Logout"
             >
-              <LogOut className="w-4 h-4 text-text-muted" />
+              <LogOut className="w-5 h-5 text-text-muted" />
             </button>
           </div>
         </div>
@@ -438,6 +464,7 @@ export default function TaskList() {
               <TaskItem
                 key={task.id}
                 task={task}
+                spaceName={spaceNames[task.space.id]}
                 onDoubleClick={() => setSelectedTask(task)}
               />
             ))}

@@ -3,6 +3,7 @@ import {
   getTask,
   getTaskComments,
   createTaskComment,
+  createTaskAttachment,
   updateTaskStatus,
   getStatuses,
   getRunningTimer,
@@ -62,10 +63,22 @@ export default function TaskDetail({ taskId, onBack }: Props) {
   });
 
   const commentMutation = useMutation({
-    mutationFn: ({ text, mentions }: { text: string; mentions: { id: number; startIndex: number; endIndex: number }[] }) =>
-      createTaskComment(taskId, text, mentions),
+    mutationFn: async ({ text, mentions, files }: { text: string; mentions: { id: number; startIndex: number; endIndex: number }[]; files: File[] }) => {
+      // Upload attachments first
+      for (const file of files) {
+        await createTaskAttachment(taskId, file);
+      }
+      // Then post the comment text (if any)
+      if (text.trim()) {
+        await createTaskComment(taskId, text, mentions);
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["comments", taskId] });
+    },
+    onError: (err: Error) => {
+      console.error("Comment/attachment failed:", err);
+      alert(`Failed: ${err.message}`);
     },
   });
 
@@ -141,8 +154,8 @@ export default function TaskDetail({ taskId, onBack }: Props) {
     return () => clearInterval(id);
   }, [isTimerRunningForThis, runningTimer]);
 
-  const handleSendComment = (text: string, mentions: { id: number; startIndex: number; endIndex: number }[]) => {
-    commentMutation.mutate({ text, mentions });
+  const handleSendComment = (text: string, mentions: { id: number; startIndex: number; endIndex: number }[], files: File[]) => {
+    commentMutation.mutate({ text, mentions, files });
   };
 
   if (taskLoading || !task) {
@@ -163,19 +176,21 @@ export default function TaskDetail({ taskId, onBack }: Props) {
         <div className="flex items-center gap-2">
           <button
             onClick={onBack}
-            className="p-1.5 rounded-md hover:bg-surface-overlay transition-colors"
+            className="p-2.5 rounded-md hover:bg-surface-overlay transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           >
-            <ArrowLeft className="w-4 h-4 text-text-muted" />
+            <ArrowLeft className="w-5 h-5 text-text-muted" />
           </button>
           <span className="text-xs text-text-muted truncate flex-1">
-            {task.folder.name} / {task.list.name}
+            {task.folder.name && task.folder.name !== "hidden"
+              ? `${task.folder.name} / ${task.list.name}`
+              : task.list.name}
           </span>
           <button
             onClick={() => openUrl(task.url)}
-            className="p-1.5 rounded-md hover:bg-surface-overlay transition-colors"
+            className="p-2.5 rounded-md hover:bg-surface-overlay transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
             title="Open in ClickUp"
           >
-            <ExternalLink className="w-3.5 h-3.5 text-text-muted" />
+            <ExternalLink className="w-5 h-5 text-text-muted" />
           </button>
         </div>
       </header>
@@ -242,11 +257,12 @@ export default function TaskDetail({ taskId, onBack }: Props) {
               <button
                 onClick={() => stopMutation.mutate()}
                 disabled={stopMutation.isPending}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-danger/15 border border-danger/30 hover:bg-danger/25 transition-colors"
+                className="flex items-center gap-3 rounded-lg bg-danger/15 border border-danger/30 hover:bg-danger/25 transition-colors"
+                style={{ padding: "10px 28px", minHeight: "44px" }}
               >
-                <Square className="w-3 h-3 text-danger fill-danger" />
-                <Timer className="w-3.5 h-3.5 text-danger" />
-                <span className="text-xs font-mono text-danger font-medium">
+                <Square className="w-4 h-4 text-danger fill-danger" />
+                <Timer className="w-4 h-4 text-danger" />
+                <span className="text-sm font-mono text-danger font-medium">
                   {elapsed}
                 </span>
               </button>
@@ -254,15 +270,16 @@ export default function TaskDetail({ taskId, onBack }: Props) {
               <button
                 onClick={() => { setTimerError(null); startMutation.mutate(); }}
                 disabled={startMutation.isPending}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-success/15 border border-success/30 hover:bg-success/25 transition-colors"
+                className="flex items-center gap-3 rounded-lg bg-success/15 border border-success/30 hover:bg-success/25 transition-colors"
+                style={{ padding: "10px 28px", minHeight: "44px" }}
                 title={
                   isTimerRunningForOther
                     ? `Timer running on: ${runningTimer?.task?.name ?? "another task"}. Starting will stop it.`
                     : "Start tracking time"
                 }
               >
-                <Play className="w-3 h-3 text-success fill-success" />
-                <span className="text-xs text-success font-medium">
+                <Play className="w-4 h-4 text-success fill-success" />
+                <span className="text-sm text-success font-medium">
                   {startMutation.isPending ? "Starting..." : isTimerRunningForOther ? "Start (stops other)" : "Start timer"}
                 </span>
               </button>
@@ -291,7 +308,7 @@ export default function TaskDetail({ taskId, onBack }: Props) {
         {/* Description */}
         {task.description && (
           <div className="pb-5 border-b border-border">
-            <p className="text-sm text-text-muted leading-relaxed whitespace-pre-wrap">
+            <p className="text-sm text-text-muted leading-relaxed whitespace-pre-wrap break-all">
               {task.description}
             </p>
           </div>

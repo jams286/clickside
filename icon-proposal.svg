@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- Background: Rounded square with ClickUp-inspired gradient -->
+  <rect width="512" height="512" rx="108" fill="url(#bg-gradient)"/>
+  
+  <!-- Side panel representation: vertical divider suggesting "sidebar" -->
+  <rect x="140" y="120" width="4" height="272" rx="2" fill="rgba(255,255,255,0.3)"/>
+  
+  <!-- Checkmark / arrow pointing right-up (ClickUp inspired) -->
+  <!-- Main stylized checkmark that also suggests forward movement (side) -->
+  <path 
+    d="M200 320 L280 240 L360 340" 
+    stroke="white" 
+    stroke-width="44" 
+    stroke-linecap="round" 
+    stroke-linejoin="round"
+    fill="none"
+  />
+  
+  <!-- Small arrow/chevron on the left side suggesting "sidebar access" -->
+  <path 
+    d="M88 230 L110 256 L88 282" 
+    stroke="rgba(255,255,255,0.7)" 
+    stroke-width="14" 
+    stroke-linecap="round" 
+    stroke-linejoin="round"
+    fill="none"
+  />
+  
+  <defs>
+    <linearGradient id="bg-gradient" x1="0" y1="0" x2="512" y2="512">
+      <stop offset="0%" stop-color="#7B68EE"/>
+      <stop offset="100%" stop-color="#49CCF9"/>
+    </linearGradient>
+  </defs>
+</svg>

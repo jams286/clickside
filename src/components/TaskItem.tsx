@@ -4,6 +4,7 @@ import { Clock, Calendar, Flag } from "lucide-react";
 
 interface Props {
   task: Task;
+  spaceName?: string;
   onDoubleClick: () => void;
 }
 
@@ -14,7 +15,7 @@ const PRIORITY_LABELS: Record<string, string> = {
   "4": "Low",
 };
 
-export default function TaskItem({ task, onDoubleClick }: Props) {
+export default function TaskItem({ task, spaceName, onDoubleClick }: Props) {
   const dueDate = task.due_date
     ? new Date(parseInt(task.due_date))
     : null;
@@ -66,7 +67,9 @@ export default function TaskItem({ task, onDoubleClick }: Props) {
             )}
 
             <span className="text-[10px] text-text-muted truncate ml-auto">
-              {task.list.name}
+              {spaceName || (task.folder.name && task.folder.name !== "hidden"
+                ? `${task.folder.name} / ${task.list.name}`
+                : task.list.name)}
             </span>
           </div>
 

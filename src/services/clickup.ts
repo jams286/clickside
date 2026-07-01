@@ -45,6 +45,13 @@ export interface Workspace {
   members: { user: ClickUpUser }[];
 }
 
+export interface Space {
+  id: string;
+  name: string;
+  color: string;
+  private: boolean;
+}
+
 export interface Status {
   id?: string;
   status: string;
@@ -94,6 +101,10 @@ export async function getAuthorizedUser(): Promise<{ user: ClickUpUser }> {
 
 export async function getWorkspaces(): Promise<{ teams: Workspace[] }> {
   return request("/team");
+}
+
+export async function getSpaces(teamId: string): Promise<{ spaces: Space[] }> {
+  return request(`/team/${teamId}/space?archived=false`);
 }
 
 export async function getFilteredTasks(
@@ -203,6 +214,42 @@ export async function createTaskComment(
     method: "POST",
     body: JSON.stringify({ comment, notify_all: false }),
   });
+}
+
+export interface Attachment {
+  id: string;
+  url: string;
+  title: string;
+  extension: string;
+  thumbnail_small?: string;
+  thumbnail_large?: string;
+  size: number;
+}
+
+export async function createTaskAttachment(
+  taskId: string,
+  file: File
+): Promise<Attachment> {
+  const token = await getToken();
+  if (!token) throw new Error("No API token configured");
+
+  const formData = new FormData();
+  formData.append("attachment", file, file.name);
+
+  const res = await fetch(`${BASE_URL}/task/${taskId}/attachment`, {
+    method: "POST",
+    headers: {
+      Authorization: token,
+    },
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const error = await res.text();
+    throw new Error(`ClickUp API error (${res.status}): ${error}`);
+  }
+
+  return res.json();
 }
 
 export async function getStatuses(listId: string): Promise<{ statuses: Status[] }> {

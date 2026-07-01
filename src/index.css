@@ -15,6 +15,17 @@
   --color-info: #49b6ff;
 }
 
+@media (prefers-color-scheme: light) {
+  :root {
+    --color-surface: #f8f8fc;
+    --color-surface-raised: #ffffff;
+    --color-surface-overlay: #eeeef4;
+    --color-text: #1e1e2e;
+    --color-text-muted: #5a5a72;
+    --color-border: #d8d8e4;
+  }
+}
+
 * {
   margin: 0;
   padding: 0;
