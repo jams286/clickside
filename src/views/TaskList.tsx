@@ -1,18 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
-import { getFilteredTasks, getSpaces, searchTaskById, Task, Status } from "../services/clickup";
+import { getFilteredTasks, getSpaces, searchTaskById, getTask, Task, Status } from "../services/clickup";
 import { useAuth } from "../context/AuthContext";
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { getFilters, setFilters as saveFilters, getSortOrder, setSortOrder as saveSortOrder } from "../services/store";
 import TaskItem from "../components/TaskItem";
 import TaskDetail from "./TaskDetail";
-import { RefreshCw, LogOut, Filter, Maximize2, Minimize2, Check, Search, ArrowUpDown, X, ExternalLink } from "lucide-react";
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import NotificationList from "./NotificationList";
+import NotificationPanel from "../components/NotificationPanel";
+import { RefreshCw, LogOut, Filter, Check, Search, ArrowUpDown, X, ExternalLink } from "lucide-react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 
 export default function TaskList() {
   const { user, workspaces, logout } = useAuth();
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [isMaximized, setIsMaximized] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [activeStatuses, setActiveStatuses] = useState<Set<string>>(new Set());
   const [showFilterMenu, setShowFilterMenu] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
@@ -207,17 +208,18 @@ export default function TaskList() {
     setShowFilterMenu(false);
   };
 
-  const toggleMaximize = async () => {
-    const win = getCurrentWindow();
-    const maximized = await win.isMaximized();
-    if (maximized) {
-      await win.unmaximize();
-      setIsMaximized(false);
-    } else {
-      await win.maximize();
-      setIsMaximized(true);
-    }
-  };
+  if (showNotifications) {
+    return (
+      <NotificationList
+        onBack={() => setShowNotifications(false)}
+        onOpenTask={async (taskId) => {
+          const task = await getTask(taskId);
+          setSelectedTask(task);
+          setShowNotifications(false);
+        }}
+      />
+    );
+  }
 
   if (selectedTask) {
     return (
@@ -252,6 +254,9 @@ export default function TaskList() {
             >
               <RefreshCw className={`w-5 h-5 text-text-muted ${isFetching ? "animate-spin" : ""}`} />
             </button>
+            <NotificationPanel
+              onClick={() => setShowNotifications(true)}
+            />
             <div className="relative" ref={filterRef}>
               <button
                 onClick={() => setShowFilterMenu(!showFilterMenu)}
@@ -350,17 +355,6 @@ export default function TaskList() {
               title="Search by task ID"
             >
               <Search className="w-5 h-5" />
-            </button>
-            <button
-              onClick={toggleMaximize}
-              className="p-2.5 rounded-md hover:bg-surface-overlay transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
-              title={isMaximized ? "Restore" : "Maximize"}
-            >
-              {isMaximized ? (
-                <Minimize2 className="w-5 h-5 text-text-muted" />
-              ) : (
-                <Maximize2 className="w-5 h-5 text-text-muted" />
-              )}
             </button>
             <button
               onClick={logout}

@@ -320,3 +320,76 @@ export async function stopTimer(
     method: "POST",
   });
 }
+
+// --- Notifications (Activity Feed) ---
+
+export interface Notification {
+  id: string;
+  date: string;
+  unread: boolean;
+  seen: boolean;
+  type: string;
+  action_type: string;
+  user: ClickUpUser;
+  task?: { id: string; name: string; status: Status };
+  parent?: string;
+  data?: Record<string, unknown>;
+  comment_text?: string;
+}
+
+export async function getNotifications(
+  teamId: string,
+  userId: number
+): Promise<{ notifications: Notification[] }> {
+  // ClickUp API doesn't expose a notifications endpoint publicly.
+  // We build a feed from recent comments on assigned tasks.
+  const { tasks } = await getFilteredTasks(teamId, userId, {
+    include_closed: false,
+    subtasks: true,
+  });
+
+  // Fetch comments from the 15 most recently updated tasks
+  const recentTasks = tasks
+    .sort((a, b) => parseInt(b.date_updated) - parseInt(a.date_updated))
+    .slice(0, 15);
+
+  const notifications: Notification[] = [];
+
+  const results = await Promise.allSettled(
+    recentTasks.map(async (task) => {
+      const { comments } = await getTaskComments(task.id);
+      return { task, comments };
+    })
+  );
+
+  for (const result of results) {
+    if (result.status !== "fulfilled") continue;
+    const { task, comments } = result.value;
+    for (const comment of comments) {
+      // Skip own comments
+      if (comment.user.id === userId) continue;
+      notifications.push({
+        id: comment.id,
+        date: comment.date,
+        unread: false,
+        seen: true,
+        type: "comment",
+        action_type: "COMMENT_ADDED",
+        user: comment.user,
+        task: { id: task.id, name: task.name, status: task.status },
+        comment_text: comment.comment_text?.slice(0, 120) || "",
+      });
+    }
+  }
+
+  // Sort by date descending and limit
+  notifications.sort((a, b) => parseInt(b.date) - parseInt(a.date));
+  return { notifications: notifications.slice(0, 50) };
+}
+
+export async function markNotificationRead(
+  _notificationId: string
+): Promise<void> {
+  // No-op: ClickUp API doesn't have a notification read endpoint.
+  // We could persist read state locally if needed.
+}
