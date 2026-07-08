@@ -11,6 +11,7 @@ import {
   stopTimer,
   Comment,
   Status,
+  Attachment,
 } from "../services/clickup";
 import { useState, useEffect } from "react";
 import {
@@ -23,12 +24,28 @@ import {
   Play,
   Square,
   Timer,
+  Paperclip,
+  FileText,
+  Image,
 } from "lucide-react";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { invoke } from "@tauri-apps/api/core";
 import CommentBubble from "../components/CommentBubble";
 import StatusBadge from "../components/StatusBadge";
 import MentionInput from "../components/MentionInput";
 import { useAuth } from "../context/AuthContext";
+
+function isImageExtension(ext: string): boolean {
+  return ["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "ico"].includes(
+    ext?.toLowerCase()
+  );
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 interface Props {
   taskId: string;
@@ -311,6 +328,41 @@ export default function TaskDetail({ taskId, onBack }: Props) {
             <p className="text-sm text-text-muted leading-relaxed whitespace-pre-wrap break-all">
               {task.description}
             </p>
+          </div>
+        )}
+
+        {/* Attachments */}
+        {task.attachments && task.attachments.length > 0 && (
+          <div className="py-4 border-b border-border">
+            <div className="flex items-center gap-1.5 mb-3">
+              <Paperclip className="w-3.5 h-3.5 text-text-muted" />
+              <span className="text-xs font-medium text-text-muted">
+                Attachments ({task.attachments.length})
+              </span>
+            </div>
+            <div className="space-y-1.5">
+              {task.attachments.map((attachment: Attachment) => (
+                <button
+                  key={attachment.id}
+                  onClick={() => invoke("download_and_open", { url: attachment.url, filename: attachment.title })}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-surface-overlay transition-colors text-left group"
+                  title={`Open ${attachment.title}`}
+                >
+                  {isImageExtension(attachment.extension) ? (
+                    <Image className="w-4 h-4 text-text-muted shrink-0" />
+                  ) : (
+                    <FileText className="w-4 h-4 text-text-muted shrink-0" />
+                  )}
+                  <span className="text-xs text-text truncate flex-1">
+                    {attachment.title}
+                  </span>
+                  <span className="text-[10px] text-text-muted">
+                    {formatFileSize(attachment.size)}
+                  </span>
+                  <ExternalLink className="w-3 h-3 text-text-muted opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                </button>
+              ))}
+            </div>
           </div>
         )}
 

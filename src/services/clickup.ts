@@ -76,6 +76,7 @@ export interface Task {
   tags: { name: string; tag_fg: string; tag_bg: string }[];
   url: string;
   time_estimate: number | null;
+  attachments?: Attachment[];
 }
 
 export interface Comment {
