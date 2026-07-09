@@ -213,7 +213,7 @@ export default function TaskDetail({ taskId, onBack }: Props) {
       </header>
 
       {/* Task Content */}
-      <div className="flex-1 overflow-y-auto" style={{ padding: '0 24px' }}>
+      <div className="flex-1 overflow-y-auto" style={{ padding: '0 12px' }}>
         {/* Title & Status */}
         <div className="pt-5 pb-4">
           <h1 className="text-base font-semibold text-text leading-snug mb-3">

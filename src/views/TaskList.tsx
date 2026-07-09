@@ -441,7 +441,7 @@ export default function TaskList() {
       )}
 
       {/* Task List */}
-      <main className="flex-1 overflow-y-auto" style={{ padding: '0 24px' }}>
+      <main className="flex-1 overflow-y-auto">
         {isLoading ? (
           <div className="flex items-center justify-center h-40">
             <RefreshCw className="w-5 h-5 text-primary animate-spin" />
@@ -453,7 +453,7 @@ export default function TaskList() {
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-border">
+          <div className="py-2">
             {filteredTasks.map((task) => (
               <TaskItem
                 key={task.id}

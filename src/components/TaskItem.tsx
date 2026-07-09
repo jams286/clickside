@@ -24,24 +24,21 @@ export default function TaskItem({ task, spaceName, onDoubleClick }: Props) {
 
   const isOverdue = dueDate && dueDate < new Date() && task.status.type !== "closed";
 
+  const sevenDaysFromNow = new Date();
+  sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+  const isDueSoon = dueDate && !isOverdue && dueDate <= sevenDaysFromNow && task.status.type !== "closed";
+
+  const edgeColor = !dueDate ? "#7b68ee" : isOverdue ? "#f45b69" : isDueSoon ? "#f0ad4e" : "#49cc90";
+
   const priorityLabel = task.priority ? PRIORITY_LABELS[task.priority.id] || task.priority.priority : null;
 
   return (
     <div
       onDoubleClick={onDoubleClick}
-      className="px-5 py-6 hover:bg-surface-raised/50 cursor-pointer transition-colors active:bg-surface-raised"
+      className="my-3 px-5 py-4 rounded-lg bg-surface-raised border border-border shadow-sm hover:shadow-md cursor-pointer transition-all active:scale-[0.99] border-l-4"
+      style={{ marginLeft: '4px', marginRight: '4px', marginTop: '4px', marginBottom: '4px', paddingLeft: '12px', borderLeftColor: edgeColor }}
     >
       <div className="flex items-start gap-3">
-        {/* Priority indicator */}
-        <div className="mt-0.5 shrink-0 self-center">
-          <span
-            className="block w-2 h-2 rounded-full"
-            style={{
-              backgroundColor: task.priority?.color || "#6b7280",
-            }}
-          />
-        </div>
-
         <div className="flex-1 min-w-0">
           {/* Task name */}
           <p className="text-sm text-text font-medium leading-snug truncate">
