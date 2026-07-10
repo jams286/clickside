@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { getNotifications } from "../services/clickup";
 import { useAuth } from "../context/AuthContext";
+import { getLastSeenNotifications } from "../services/store";
 import { Bell } from "lucide-react";
 
 interface Props {
@@ -19,7 +20,15 @@ export default function NotificationPanel({ onClick }: Props) {
     staleTime: 60000,
   });
 
-  const count = data?.notifications?.length ?? 0;
+  const { data: lastSeen = 0 } = useQuery({
+    queryKey: ["notifications_last_seen"],
+    queryFn: () => getLastSeenNotifications(),
+  });
+
+  const count = data?.notifications?.filter((n) => {
+    const nTime = new Date(parseInt(n.date)).getTime();
+    return nTime > lastSeen;
+  }).length ?? 0;
 
   return (
     <button

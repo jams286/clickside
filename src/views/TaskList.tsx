@@ -1,19 +1,23 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getFilteredTasks, getSpaces, searchTaskById, getTask, Task, Status } from "../services/clickup";
 import { useAuth } from "../context/AuthContext";
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
-import { getFilters, setFilters as saveFilters, getSortOrder, setSortOrder as saveSortOrder } from "../services/store";
+import { getFilters, setFilters as saveFilters, getSortOrder, setSortOrder as saveSortOrder, setLastSeenNotifications } from "../services/store";
 import TaskItem from "../components/TaskItem";
 import TaskDetail from "./TaskDetail";
 import NotificationList from "./NotificationList";
 import NotificationPanel from "../components/NotificationPanel";
+import AccountSwitcher from "../components/AccountSwitcher";
+import SetupScreen from "./SetupScreen";
 import { RefreshCw, LogOut, Filter, Check, Search, ArrowUpDown, X, ExternalLink } from "lucide-react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 
 export default function TaskList() {
   const { user, workspaces, logout } = useAuth();
+  const queryClient = useQueryClient();
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [addingAccount, setAddingAccount] = useState(false);
   const [activeStatuses, setActiveStatuses] = useState<Set<string>>(new Set());
   const [showFilterMenu, setShowFilterMenu] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
@@ -208,6 +212,10 @@ export default function TaskList() {
     setShowFilterMenu(false);
   };
 
+  if (addingAccount) {
+    return <SetupScreen onBack={() => setAddingAccount(false)} />;
+  }
+
   if (showNotifications) {
     return (
       <NotificationList
@@ -236,12 +244,7 @@ export default function TaskList() {
       <header className="shrink-0 px-4 py-3 border-b border-border bg-surface-raised" data-tauri-drag-region>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div
-              className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
-              style={{ backgroundColor: user?.color || "#7b68ee" }}
-            >
-              {user?.initials}
-            </div>
+            <AccountSwitcher onAddAccount={() => setAddingAccount(true)} />
             <span className="text-sm font-medium text-text truncate max-w-[120px]">
               My Tasks
             </span>
@@ -255,7 +258,11 @@ export default function TaskList() {
               <RefreshCw className={`w-5 h-5 text-text-muted ${isFetching ? "animate-spin" : ""}`} />
             </button>
             <NotificationPanel
-              onClick={() => setShowNotifications(true)}
+              onClick={async () => {
+                setShowNotifications(true);
+                await setLastSeenNotifications(Date.now());
+                queryClient.invalidateQueries({ queryKey: ["notifications_last_seen"] });
+              }}
             />
             <div className="relative" ref={filterRef}>
               <button

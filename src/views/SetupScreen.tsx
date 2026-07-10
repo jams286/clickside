@@ -1,10 +1,14 @@
 import { useState } from "react";
 import { validateToken, getWorkspaces } from "../services/clickup";
-import { setToken as storeTokenDirectly } from "../services/store";
+import { addAccount, StoredAccount } from "../services/store";
 import { useAuth } from "../context/AuthContext";
-import { KeyRound, Loader2, AlertCircle } from "lucide-react";
+import { KeyRound, Loader2, AlertCircle, ArrowLeft } from "lucide-react";
 
-export default function SetupScreen() {
+interface Props {
+  onBack?: () => void;
+}
+
+export default function SetupScreen({ onBack }: Props) {
   const { login } = useAuth();
   const [token, setToken] = useState("");
   const [loading, setLoading] = useState(false);
@@ -26,8 +30,16 @@ export default function SetupScreen() {
         return;
       }
 
-      // Store token temporarily so getWorkspaces can use it
-      await storeTokenDirectly(trimmed);
+      // Store account so getWorkspaces can authenticate
+      const tempAccount: StoredAccount = {
+        id: String(result.user.id),
+        token: trimmed,
+        userName: result.user.username || result.user.email,
+        email: result.user.email,
+        color: result.user.color || "#7b68ee",
+        initials: result.user.initials || result.user.username?.charAt(0)?.toUpperCase() || "?",
+      };
+      await addAccount(tempAccount);
 
       const { teams } = await getWorkspaces();
       await login(trimmed, result.user, teams);
@@ -40,12 +52,20 @@ export default function SetupScreen() {
 
   return (
     <div className="flex flex-col items-center justify-center h-screen px-6 bg-surface">
+      {onBack && (
+        <button
+          onClick={onBack}
+          className="absolute top-4 left-4 p-2 rounded-md hover:bg-surface-overlay transition-colors text-text-muted"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+      )}
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-8">
           <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center mb-4">
             <KeyRound className="w-8 h-8 text-primary" />
           </div>
-          <h1 className="text-xl font-bold text-text">Welcome to ClickSide</h1>
+          <h1 className="text-xl font-bold text-text">{onBack ? "Add Account" : "Welcome to ClickSide"}</h1>
           <p className="text-sm text-text-muted mt-2 text-center">
             Enter your ClickUp personal API token to get started.
           </p>
